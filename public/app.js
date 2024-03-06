@@ -1,11 +1,8 @@
 document.addEventListener('DOMContentLoaded', function () {
     const appContainer = document.getElementById('app');
     const billingBtn = document.getElementById('billingBtn');
-    const billingForm = document.getElementById('billingForm');
-    const billResult = document.getElementById('billResult');
 
     billingBtn.addEventListener('click', showBillingModule);
-    billingForm.addEventListener('submit', calculateBill);
 
     function showBillingModule(event) {
         event.preventDefault();
@@ -20,34 +17,75 @@ document.addEventListener('DOMContentLoaded', function () {
                 <input type="number" id="consumption" required>
                 <label for="billDate">Date Bill Generated:</label>
                 <input type="date" id="billDate" required>
-                <button type="submit">Generate Bill</button>
+                <button type="button" id="generateBillBtn">Generate Bill</button>
             </form>
             <div id="billResult" class="hidden"></div>
         `;
-        billingForm.addEventListener('submit', calculateBill);
+
+        // Add event listener to the new "Generate Bill" button
+        const generateBillBtn = document.getElementById('generateBillBtn');
+        generateBillBtn.addEventListener('click', displayBillResult);
     }
 
-    function calculateBill(event) {
-        event.preventDefault(); // Prevent the default form submission behavior
-    
+    function displayBillResult() {
         const ownerName = document.getElementById('ownerName').value;
         const houseNumber = document.getElementById('houseNumber').value;
         const consumption = parseFloat(document.getElementById('consumption').value);
         const billDate = document.getElementById('billDate').valueAsDate;
-    
+
         if (isNaN(consumption) || !billDate) {
             alert('Invalid input. Please fill in all fields with valid data.');
             return;
         }
-    
+
         const dueDate = new Date(billDate);
         dueDate.setDate(dueDate.getDate() + 20);
-    
+
         const totalBill = calculateTotalBill(consumption);
-    
-        displayBillResult(ownerName, houseNumber, consumption, billDate, dueDate, totalBill);
+
+        // Create a new HTML page to display the bill details
+        const billPageContent = `
+            <html>
+            <head>
+                <title>Electric Bill Details</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        text-align: center;
+                        margin: 20px;
+                    }
+                    h1, p {
+                        margin: 10px 0;
+                    }
+                    button {
+                        background-color: #4CAF50;
+                        color: white;
+                        padding: 10px 20px;
+                        border: none;
+                        border-radius: 5px;
+                        cursor: pointer;
+                    }
+                    button:hover {
+                        background-color: #45a049;
+                    }
+                </style>
+            </head>
+            <body>
+                <h1>Electric Bill Details</h1>
+                <p><strong>Owner Name:</strong> ${ownerName}</p>
+                <p><strong>House Number:</strong> ${houseNumber}</p>
+                <p><strong>Units Consumed (kWh):</strong> ${consumption}</p>
+                <p><strong>Date Bill Generated:</strong> ${billDate.toLocaleDateString()}</p>
+                <p><strong>Due Date:</strong> ${dueDate.toLocaleDateString()}</p>
+                <p><strong>Total Bill:</strong> ₹${totalBill.toFixed(2)}</p>
+                <button onclick="window.print()">Print</button>
+            </body>
+            </html>
+        `;
+
+        const newPage = window.open();
+        newPage.document.write(billPageContent);
     }
-    
 
     function calculateTotalBill(consumption) {
         let totalBill = 0;
@@ -78,54 +116,4 @@ document.addEventListener('DOMContentLoaded', function () {
 
         return totalBill;
     }
-
-    function displayBillResult(ownerName, houseNumber, consumption, billDate, dueDate, totalBill) {
-        billResult.innerHTML = `
-            <p><strong>Owner Name:</strong> ${ownerName}</p>
-            <p><strong>House Number:</strong> ${houseNumber}</p>
-            <p><strong>Units Consumed (kWh):</strong> ${consumption}</p>
-            <p><strong>Date Bill Generated:</strong> ${billDate.toLocaleDateString()}</p>
-            <p><strong>Due Date:</strong> ${dueDate.toLocaleDateString()}</p>
-            <p><strong>Total Bill:</strong> ₹${totalBill.toFixed(2)}</p>
-            <button id="downloadPDF">Download as PDF</button>
-        `;
-        billResult.classList.remove('hidden');
-    
-        // Add event listener to the download button
-        const downloadPDFBtn = document.getElementById('downloadPDF');
-        downloadPDFBtn.addEventListener('click', function () {
-            downloadPDF(ownerName, houseNumber, consumption, billDate, dueDate, totalBill);
-        });
-    }
-    
-    function downloadPDF(ownerName, houseNumber, consumption, billDate, dueDate, totalBill) {
-        // Create a new jsPDF instance
-        const pdf = new jsPDF();
-    
-        // Add the bill content to the PDF
-        pdf.text(`Owner Name: ${ownerName}`, 15, 20);
-        pdf.text(`House Number: ${houseNumber}`, 15, 30);
-        pdf.text(`Units Consumed (kWh): ${consumption}`, 15, 40);
-        pdf.text(`Date Bill Generated: ${billDate.toLocaleDateString()}`, 15, 50);
-        pdf.text(`Due Date: ${dueDate.toLocaleDateString()}`, 15, 60);
-        pdf.text(`Total Bill: ₹${totalBill.toFixed(2)}`, 15, 70);
-    
-        // Convert the PDF to a Blob
-        const pdfBlob = pdf.output('blob');
-    
-        // Create an anchor element
-        const anchor = document.createElement('a');
-        anchor.href = URL.createObjectURL(pdfBlob);
-        anchor.download = 'electric_bill.pdf';
-    
-        // Append the anchor to the body and trigger the click event
-        document.body.appendChild(anchor);
-        anchor.click();
-    
-        // Remove the anchor from the body
-        document.body.removeChild(anchor);
-    }
-    
-    
-
 });
